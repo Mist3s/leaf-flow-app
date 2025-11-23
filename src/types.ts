@@ -1,5 +1,10 @@
 export type ProductCategory = 'green' | 'black' | 'oolong' | 'puer' | 'sets';
-export type Category = 'all' | ProductCategory;
+export type CategoryFilterValue = 'all' | ProductCategory;
+
+export interface Category {
+  id: ProductCategory;
+  label: string;
+}
 
 export interface ProductVariant {
   id: string;
@@ -17,10 +22,22 @@ export interface Product {
   variants: ProductVariant[];
 }
 
-export interface CartItem {
+export interface CartItemInput {
   productId: string;
   variantId: string;
   quantity: number;
+}
+
+export interface CartItem extends CartItemInput {
+  price?: number;
+  total?: number;
+}
+
+export interface Cart {
+  items: CartItem[];
+  totalCount: number;
+  totalPrice: number;
+  updatedAt?: string;
 }
 
 export interface OrderSummary {
@@ -28,6 +45,24 @@ export interface OrderSummary {
   customerName: string;
   deliveryMethod: string;
   total: number;
+}
+
+export type DeliveryMethod = 'pickup' | 'courier' | 'cdek';
+
+export interface OrderRequest {
+  customerName: string;
+  phone: string;
+  delivery: DeliveryMethod;
+  address?: string;
+  comment?: string;
+  expectedTotal?: number;
+}
+
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+  refreshExpiresIn: number;
 }
 
 export type Page =

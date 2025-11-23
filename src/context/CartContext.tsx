@@ -1,7 +1,7 @@
-import { createContext, useContext, type ReactNode } from 'react';
-import { useLocalStorage } from '../hooks/useLocalStorage';
-import type { CartItem, Product, ProductVariant } from '../types';
-import { products } from '../data/products';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { addCartItem, clearCart as clearCartApi, fetchCart, removeCartItem, updateCartItem } from '../api/cart';
+import { fetchProductById } from '../api/catalog';
+import type { Cart, CartItem, Product, ProductVariant } from '../types';
 
 interface CartContextValue {
   items: CartItem[];
@@ -13,62 +13,115 @@ interface CartContextValue {
   totalPrice: number;
   resolveProduct: (productId: string) => Product | undefined;
   resolveVariant: (productId: string, variantId: string) => ProductVariant | undefined;
+  refresh: () => void;
+  isLoading: boolean;
+  error: string | null;
 }
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
 
-const STORAGE_KEY = 'tea-shop-cart';
-
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [items, setItems] = useLocalStorage<CartItem[]>(STORAGE_KEY, []);
+  const [cart, setCart] = useState<Cart | null>(null);
+  const [productCache, setProductCache] = useState<Record<string, Product>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const hydrateProducts = async (items: CartItem[]) => {
+    const missingProductIds = items
+      .map((item) => item.productId)
+      .filter((productId, index, array) => array.indexOf(productId) === index)
+      .filter((productId) => !productCache[productId]);
+
+    if (missingProductIds.length === 0) {
+      return;
+    }
+
+    const loaded = await Promise.all(
+      missingProductIds.map((productId) => fetchProductById(productId).catch(() => null))
+    );
+
+    setProductCache((prev) => {
+      const next = { ...prev };
+      loaded.forEach((product) => {
+        if (product) {
+          next[product.id] = product;
+        }
+      });
+      return next;
+    });
+  };
+
+  const loadCart = () => {
+    setIsLoading(true);
+    setError(null);
+    fetchCart()
+      .then(async (response) => {
+        setCart(response);
+        await hydrateProducts(response.items);
+      })
+      .catch((err) => {
+        console.error(err);
+        setError('Не удалось загрузить корзину');
+        setCart({ items: [], totalCount: 0, totalPrice: 0 });
+      })
+      .finally(() => setIsLoading(false));
+  };
+
+  useEffect(() => {
+    loadCart();
+  }, []);
+
+  const handleCartUpdate = async (action: () => Promise<Cart>) => {
+    setIsUpdating(true);
+    setError(null);
+    try {
+      const response = await action();
+      setCart(response);
+      await hydrateProducts(response.items);
+    } catch (err) {
+      console.error(err);
+      setError('Не удалось обновить корзину');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const addItem = (productId: string, variantId: string) => {
-    setItems((prev) => {
-      const existing = prev.find((item) => item.productId === productId && item.variantId === variantId);
-      if (existing) {
-        return prev.map((item) =>
-          item === existing ? { ...item, quantity: item.quantity + 1 } : item
-        );
-      }
-      return [...prev, { productId, variantId, quantity: 1 }];
-    });
+    void handleCartUpdate(() => addCartItem({ productId, variantId, quantity: 1 }));
   };
 
   const updateItem = (productId: string, variantId: string, quantity: number) => {
-    setItems((prev) => {
-      if (quantity <= 0) {
-        return prev.filter((item) => !(item.productId === productId && item.variantId === variantId));
-      }
-      return prev.map((item) =>
-        item.productId === productId && item.variantId === variantId ? { ...item, quantity } : item
-      );
-    });
+    if (quantity <= 0) {
+      void handleCartUpdate(() => removeCartItem(productId, variantId));
+      return;
+    }
+
+    void handleCartUpdate(() => updateCartItem(productId, variantId, quantity));
   };
 
-  const clear = () => setItems([]);
+  const clear = () => {
+    void handleCartUpdate(() => clearCartApi().then(() => ({ items: [], totalCount: 0, totalPrice: 0 })));
+  };
 
   const getItemQuantity = (productId: string, variantId: string) =>
-    items.find((item) => item.productId === productId && item.variantId === variantId)?.quantity ?? 0;
+    cart?.items.find((item) => item.productId === productId && item.variantId === variantId)?.quantity ?? 0;
 
-  const resolveProduct = (productId: string) => products.find((product) => product.id === productId);
+  const resolveProduct = (productId: string) => productCache[productId];
 
   const resolveVariant = (productId: string, variantId: string) =>
     resolveProduct(productId)?.variants.find((variant) => variant.id === variantId);
 
-  const totals = items.reduce(
-    (acc, item) => {
-      const variant = resolveVariant(item.productId, item.variantId);
-      if (variant) {
-        acc.totalPrice += variant.price * item.quantity;
-        acc.totalCount += item.quantity;
-      }
-      return acc;
-    },
-    { totalCount: 0, totalPrice: 0 }
+  const totals = useMemo(
+    () => ({
+      totalCount: cart?.totalCount ?? 0,
+      totalPrice: cart?.totalPrice ?? 0,
+    }),
+    [cart]
   );
 
   const value: CartContextValue = {
-    items,
+    items: cart?.items ?? [],
     addItem,
     updateItem,
     clear,
@@ -77,6 +130,9 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     totalPrice: totals.totalPrice,
     resolveProduct,
     resolveVariant,
+    refresh: loadCart,
+    isLoading: isLoading || isUpdating,
+    error,
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

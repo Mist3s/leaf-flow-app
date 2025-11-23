@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useCart } from '../context/CartContext';
-import { products } from '../data/products';
 import { QuantityControl } from '../components/QuantityControl';
+import { fetchProductById } from '../api/catalog';
+import type { Product } from '../types';
 
 interface ProductPageProps {
   productId: string;
@@ -9,9 +10,30 @@ interface ProductPageProps {
 }
 
 export const ProductPage: React.FC<ProductPageProps> = ({ productId, onGoToCart }) => {
-  const product = products.find((item) => item.id === productId);
   const { addItem, updateItem, getItemQuantity, items } = useCart();
+  const [product, setProduct] = useState<Product | null>(null);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadProduct = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetchProductById(productId);
+      setProduct(response);
+    } catch (err) {
+      console.error(err);
+      setError('Не удалось загрузить товар');
+      setProduct(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [productId]);
+
+  useEffect(() => {
+    void loadProduct();
+  }, [loadProduct]);
 
   useEffect(() => {
     if (!product) {
@@ -28,7 +50,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({ productId, onGoToCart 
       }
       return (variantWithQuantity ?? product.variants[0])?.id ?? null;
     });
-  }, [product, items]);
+  }, [product, items, getItemQuantity]);
 
   const selectedVariant = useMemo(() => {
     if (!product || !selectedVariantId) {
@@ -48,8 +70,21 @@ export const ProductPage: React.FC<ProductPageProps> = ({ productId, onGoToCart 
       }, 0)
     : 0;
 
-  if (!product) {
-    return <div className="page">Товар не найден</div>;
+  if (isLoading) {
+    return <div className="page product-page">Загрузка...</div>;
+  }
+
+  if (error || !product) {
+    return (
+      <div className="page product-page">
+        <div className="empty-state">
+          <p>{error ?? 'Товар не найден'}</p>
+          <button className="cta-button" onClick={() => void loadProduct()} disabled={isLoading}>
+            Повторить загрузку
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

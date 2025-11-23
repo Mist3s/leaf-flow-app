@@ -7,13 +7,13 @@ import { ProductPage } from './pages/ProductPage';
 import { CartPage } from './pages/CartPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { ConfirmationPage } from './pages/ConfirmationPage';
-import type { Category, OrderSummary, Page } from './types';
+import type { CategoryFilterValue, OrderSummary, Page } from './types';
 
 const AppContent: React.FC = () => {
   const { totalCount } = useCart();
   const [page, setPage] = useState<Page>('catalog');
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-  const [activeCategory, setActiveCategory] = useState<Category>('all');
+  const [activeCategory, setActiveCategory] = useState<CategoryFilterValue>('all');
   const [orderSummary, setOrderSummary] = useState<OrderSummary | null>(null);
 
   const layoutTitle = useMemo(() => {

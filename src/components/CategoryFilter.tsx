@@ -1,16 +1,21 @@
 import React from 'react';
-import { categories } from '../data/products';
-import type { Category } from '../types';
+import type { CategoryFilterValue } from '../types';
 
-interface CategoryFilterProps {
-  activeCategory: Category;
-  onSelect: (category: Category) => void;
+interface CategoryFilterOption {
+  id: CategoryFilterValue;
+  label: string;
 }
 
-export const CategoryFilter: React.FC<CategoryFilterProps> = ({ activeCategory, onSelect }) => {
+interface CategoryFilterProps {
+  options: CategoryFilterOption[];
+  activeCategory: CategoryFilterValue;
+  onSelect: (category: CategoryFilterValue) => void;
+}
+
+export const CategoryFilter: React.FC<CategoryFilterProps> = ({ options, activeCategory, onSelect }) => {
   return (
     <div className="category-filter">
-      {categories.map((category) => (
+      {options.map((category) => (
         <button
           key={category.id}
           className={`chip ${activeCategory === category.id ? 'chip-active' : ''}`}

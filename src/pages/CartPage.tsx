@@ -9,7 +9,30 @@ interface CartPageProps {
 }
 
 export const CartPage: React.FC<CartPageProps> = ({ onContinueShopping, onCheckout, onSelectProduct }) => {
-  const { items, updateItem, resolveProduct, resolveVariant, totalCount, totalPrice } = useCart();
+  const { items, updateItem, resolveProduct, resolveVariant, totalCount, totalPrice, isLoading, error, refresh } = useCart();
+
+  if (isLoading) {
+    return (
+      <div className="page cart-page">
+        <div className="empty-state">
+          <p>Загрузка корзины...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page cart-page">
+        <div className="empty-state">
+          <p>{error}</p>
+          <button className="cta-button" onClick={refresh}>
+            Повторить загрузку
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (

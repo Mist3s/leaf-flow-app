@@ -1,13 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { useCart } from '../context/CartContext';
-import type { OrderSummary } from '../types';
+import { createOrder } from '../api/orders';
+import type { DeliveryMethod, OrderRequest, OrderSummary } from '../types';
 
 interface CheckoutPageProps {
   onBackToCart: () => void;
   onOrderComplete: (summary: OrderSummary) => void;
 }
-
-type DeliveryMethod = 'pickup' | 'courier' | 'cdek';
 
 interface FormState {
   name: string;
@@ -58,7 +57,7 @@ const formatPhoneNumber = (value: string) => {
 };
 
 export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToCart, onOrderComplete }) => {
-  const { items, totalCount, totalPrice, clear } = useCart();
+  const { items, totalCount, totalPrice, clear, isLoading, error, refresh } = useCart();
   const [form, setForm] = useState<FormState>({
     name: '',
     phone: '',
@@ -122,41 +121,35 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToCart, onOrde
     handleChange('phone', formatted);
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSubmitError(null);
 
     if (!validate()) {
       return;
     }
 
+    setSubmitError(null);
     setIsSubmitting(true);
 
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    const success = Math.random() > 0.05;
-
-    if (!success) {
-      setSubmitError('Не удалось оформить заказ, попробуйте ещё раз');
-      setIsSubmitting(false);
-      return;
-    }
-
-    const summary: OrderSummary = {
-      orderId: `TG-${Date.now().toString().slice(-6)}`,
+    const payload: OrderRequest = {
       customerName: form.name.trim(),
-      deliveryMethod:
-        form.delivery === 'pickup'
-          ? 'Самовывоз'
-          : form.delivery === 'courier'
-          ? 'Курьер'
-          : 'СДЭК',
-      total: totalPrice,
+      phone: form.phone,
+      delivery: form.delivery,
+      address: form.delivery === 'pickup' ? undefined : form.address.trim(),
+      comment: form.comment.trim() || undefined,
+      expectedTotal: totalPrice,
     };
 
-    clear();
-    setIsSubmitting(false);
-    onOrderComplete(summary);
+    try {
+      const summary = await createOrder(payload);
+      clear();
+      onOrderComplete(summary);
+    } catch (orderError) {
+      console.error(orderError);
+      setSubmitError('Не удалось оформить заказ, попробуйте ещё раз');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const deliveryOptions: { value: DeliveryMethod; label: string }[] = useMemo(
@@ -167,6 +160,29 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToCart, onOrde
     ],
     []
   );
+
+  if (isLoading) {
+    return (
+      <div className="page checkout-page">
+        <div className="empty-state">
+          <p>Загрузка корзины...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page checkout-page">
+        <div className="empty-state">
+          <p>{error}</p>
+          <button className="cta-button" onClick={refresh}>
+            Повторить загрузку
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (

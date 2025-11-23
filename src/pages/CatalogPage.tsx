@@ -1,13 +1,13 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { CategoryFilter } from '../components/CategoryFilter';
 import { ProductCard } from '../components/ProductCard';
-import { products } from '../data/products';
-import type { Category } from '../types';
+import { fetchCategories, fetchProducts } from '../api/catalog';
+import type { CategoryFilterValue, Product } from '../types';
 
 interface CatalogPageProps {
   onSelectProduct: (productId: string) => void;
-  activeCategory: Category;
-  onCategoryChange: (category: Category) => void;
+  activeCategory: CategoryFilterValue;
+  onCategoryChange: (category: CategoryFilterValue) => void;
 }
 
 const LOAD_BATCH_SIZE = 5;
@@ -17,32 +17,92 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   activeCategory,
   onCategoryChange,
 }) => {
-  const [visibleCount, setVisibleCount] = useState(LOAD_BATCH_SIZE);
+  const [categories, setCategories] = useState<{ id: CategoryFilterValue; label: string }[]>([
+    { id: 'all', label: 'Все' },
+  ]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const isLoadingRef = useRef(false);
 
-  useEffect(() => {
-    setVisibleCount(LOAD_BATCH_SIZE);
+  const refreshPageData = useCallback(async () => {
+    if (isLoadingRef.current) {
+      return;
+    }
+
+    isLoadingRef.current = true;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [categoriesResponse, productsResponse] = await Promise.all([
+        fetchCategories(),
+        fetchProducts({
+          category: activeCategory === 'all' ? undefined : activeCategory,
+          offset: 0,
+          limit: LOAD_BATCH_SIZE,
+        }),
+      ]);
+
+      setCategories([
+        { id: 'all', label: 'Все' },
+        ...categoriesResponse.items.map((item) => ({ id: item.id, label: item.label })),
+      ]);
+      setProducts(productsResponse.items);
+      setHasMore(productsResponse.items.length < productsResponse.total);
+    } catch (err) {
+      console.error(err);
+      setError('Не удалось загрузить каталог');
+      setProducts([]);
+      setHasMore(false);
+    } finally {
+      isLoadingRef.current = false;
+      setIsLoading(false);
+    }
   }, [activeCategory]);
 
-  const filteredProducts = useMemo(
-    () =>
-      activeCategory === 'all'
-        ? products
-        : products.filter((product) => product.category === activeCategory),
-    [activeCategory]
+  const loadProducts = useCallback(
+    async (mode: 'reset' | 'append') => {
+      if (isLoadingRef.current) {
+        return;
+      }
+
+      isLoadingRef.current = true;
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await fetchProducts({
+          category: activeCategory === 'all' ? undefined : activeCategory,
+          offset: mode === 'append' ? products.length : 0,
+          limit: LOAD_BATCH_SIZE,
+        });
+
+        if (mode === 'reset') {
+          setProducts(response.items);
+        } else {
+          setProducts((prev) => [...prev, ...response.items]);
+        }
+
+        setHasMore(response.items.length + (mode === 'append' ? products.length : 0) < response.total);
+      } catch (err) {
+        console.error(err);
+        setError('Не удалось загрузить товары');
+        setHasMore(false);
+      } finally {
+        isLoadingRef.current = false;
+        setIsLoading(false);
+      }
+    },
+    [activeCategory, products.length]
   );
 
   useEffect(() => {
-    setVisibleCount((prev) =>
-      filteredProducts.length === 0 ? 0 : Math.min(prev, filteredProducts.length)
-    );
-  }, [filteredProducts]);
-
-  const visibleProducts = filteredProducts.slice(0, visibleCount);
-  const canLoadMore = visibleCount < filteredProducts.length;
+    void refreshPageData();
+  }, [activeCategory, refreshPageData]);
 
   useEffect(() => {
-    if (!canLoadMore) {
+    if (!hasMore) {
       return;
     }
 
@@ -50,9 +110,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            setVisibleCount((prev) =>
-              Math.min(prev + LOAD_BATCH_SIZE, filteredProducts.length)
-            );
+            void loadProducts('append');
           }
         });
       },
@@ -70,20 +128,36 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
       }
       observer.disconnect();
     };
-  }, [canLoadMore, filteredProducts]);
+  }, [hasMore, loadProducts]);
 
   return (
     <div className="page catalog-page">
-      <CategoryFilter activeCategory={activeCategory} onSelect={onCategoryChange} />
+      <CategoryFilter options={categories} activeCategory={activeCategory} onSelect={onCategoryChange} />
       <div className="product-grid">
-        {visibleProducts.map((product) => (
+        {products.map((product) => (
           <ProductCard key={product.id} product={product} onClick={() => onSelectProduct(product.id)} />
         ))}
       </div>
+      {error && (
+        <div className="infinite-scroll-status">
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={() => {
+              setHasMore(true);
+              void refreshPageData();
+            }}
+            disabled={isLoading}
+          >
+            Повторить попытку
+          </button>
+        </div>
+      )}
       <div ref={sentinelRef} className="scroll-sentinel" aria-hidden="true" />
       <div className="infinite-scroll-status">
-        {filteredProducts.length === 0 && <span>Товары не найдены</span>}
-        {filteredProducts.length > 0 && !canLoadMore && <span>Вы просмотрели все товары</span>}
+        {!isLoading && products.length === 0 && <span>Товары не найдены</span>}
+        {isLoading && <span>Загрузка...</span>}
+        {!isLoading && products.length > 0 && !hasMore && <span>Вы просмотрели все товары</span>}
       </div>
     </div>
   );
