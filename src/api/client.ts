@@ -1,7 +1,8 @@
-import type { AuthTokens } from '../types';
+import type { AuthResponse, AuthTokens } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://app-stage.zavarka39.ru/api/v1';
 const AUTH_STORAGE_KEY = 'teagram-auth';
+const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? import.meta.env.VITE_APP_NAME ?? 'unknown';
 
 export class ApiError extends Error {
   status?: number;
@@ -36,8 +37,69 @@ const persistAuthTokens = (tokens: AuthTokens | null) => {
 };
 
 let inFlightRefresh: Promise<AuthTokens | null> | null = null;
+let inFlightTelegramAuth: Promise<AuthTokens | null> | null = null;
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const getTelegramInitData = () => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const initData = window.Telegram?.WebApp?.initData;
+  if (!initData || !initData.trim()) {
+    console.warn('Telegram initData is missing');
+    return null;
+  }
+
+  return initData;
+};
+
+const authorizeWithTelegram = async (): Promise<AuthTokens | null> => {
+  if (inFlightTelegramAuth) {
+    return inFlightTelegramAuth;
+  }
+
+  const initData = getTelegramInitData();
+  if (!initData) {
+    return null;
+  }
+
+  inFlightTelegramAuth = fetch(`${API_BASE_URL}/auth/telegram/init`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ initData, appVersion: APP_VERSION }),
+  })
+    .then(async (response) => {
+      if (!response.ok) {
+        throw new ApiError('Failed to authorize via Telegram', response.status, await response.json().catch(() => null));
+      }
+      const { tokens } = (await response.json()) as AuthResponse;
+      persistAuthTokens(tokens);
+      return tokens;
+    })
+    .catch((error) => {
+      console.error('Telegram auth failed', error);
+      persistAuthTokens(null);
+      return null;
+    })
+    .finally(() => {
+      inFlightTelegramAuth = null;
+    });
+
+  return inFlightTelegramAuth;
+};
+
+const ensureAuthTokens = async (): Promise<AuthTokens | null> => {
+  const tokens = readAuthTokens();
+  if (tokens?.accessToken) {
+    return tokens;
+  }
+
+  return authorizeWithTelegram();
+};
 
 const refreshTokens = async (): Promise<AuthTokens | null> => {
   if (inFlightRefresh) {
@@ -81,7 +143,7 @@ interface RequestOptions extends RequestInit {
 }
 
 export const request = async <T>(path: string, options: RequestOptions = {}): Promise<T> => {
-  const tokens = options.skipAuth ? null : readAuthTokens();
+  let tokens = options.skipAuth ? null : await ensureAuthTokens();
   const headers = new Headers({ Accept: 'application/json' });
 
   if (options.headers) {
@@ -116,6 +178,11 @@ export const request = async <T>(path: string, options: RequestOptions = {}): Pr
       if (response.status === 401 && !options.skipAuth) {
         const refreshed = await refreshTokens();
         if (refreshed?.accessToken) {
+          return request<T>(path, options);
+        }
+
+        const telegramTokens = await authorizeWithTelegram();
+        if (telegramTokens?.accessToken) {
           return request<T>(path, options);
         }
       }

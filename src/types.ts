@@ -65,6 +65,10 @@ export interface AuthTokens {
   refreshExpiresIn: number;
 }
 
+export interface AuthResponse {
+  tokens: AuthTokens;
+}
+
 export type Page =
   | 'catalog'
   | 'product'

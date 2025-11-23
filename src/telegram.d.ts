@@ -1,5 +1,6 @@
 interface TelegramWebApp {
   close?: () => void;
+  initData?: string;
 }
 
 interface TelegramNamespace {
