@@ -123,25 +123,16 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToCart, onOrde
   };
 
   useEffect(() => {
-    const applyName = (firstName?: string, lastName?: string) => {
-      if (form.name.trim()) {
-        return;
-      }
+    if (form.name.trim()) {
+      return;
+    }
 
+    const applyName = (firstName?: string, lastName?: string) => {
       const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
       if (fullName) {
         setForm((prev) => ({ ...prev, name: fullName }));
       }
     };
-
-    const telegramUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-    if (telegramUser) {
-      applyName(telegramUser.first_name, telegramUser.last_name);
-    }
-
-    if (form.name.trim()) {
-      return;
-    }
 
     void fetchProfile()
       .then((profile) => {
