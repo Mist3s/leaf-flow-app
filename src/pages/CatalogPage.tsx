@@ -29,6 +29,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   const [total, setTotal] = useState(0);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const isLoadingRef = useRef(false);
+  const pendingLoadRef = useRef(false);
 
   const refreshPageData = useCallback(async () => {
     if (isLoadingRef.current) {
@@ -121,6 +122,12 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
+            if (isLoadingRef.current) {
+              pendingLoadRef.current = true;
+              return;
+            }
+
+            pendingLoadRef.current = false;
             void loadProducts('append');
           }
         });
@@ -140,6 +147,13 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
       observer.disconnect();
     };
   }, [hasMore, loadProducts]);
+
+  useEffect(() => {
+    if (!isLoading && pendingLoadRef.current && hasMore) {
+      pendingLoadRef.current = false;
+      void loadProducts('append');
+    }
+  }, [hasMore, isLoading, loadProducts]);
 
   return (
     <div className="page catalog-page">
