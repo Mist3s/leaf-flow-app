@@ -15,6 +15,7 @@ interface CartContextValue {
   resolveVariant: (productId: string, variantId: string) => ProductVariant | undefined;
   refresh: () => void;
   isLoading: boolean;
+  isUpdating: boolean;
   error: string | null;
 }
 
@@ -131,7 +132,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     resolveProduct,
     resolveVariant,
     refresh: loadCart,
-    isLoading: isLoading || isUpdating,
+    isLoading,
+    isUpdating,
     error,
   };
 

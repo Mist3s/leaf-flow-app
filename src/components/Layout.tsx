@@ -12,6 +12,9 @@ interface LayoutProps {
   showBackButton?: boolean;
   headerVariant?: 'default' | 'minimal' | 'none';
   showTitle?: boolean;
+  showSearch?: boolean;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
 }
 
 export const Layout: React.FC<LayoutProps> = ({
@@ -24,6 +27,9 @@ export const Layout: React.FC<LayoutProps> = ({
   showBackButton = false,
   headerVariant = 'default',
   showTitle = true,
+  showSearch = false,
+  searchValue = '',
+  onSearchChange,
 }) => {
   const { theme, toggleTheme } = useTheme();
 
@@ -34,6 +40,15 @@ export const Layout: React.FC<LayoutProps> = ({
           <button className="icon-button" onClick={onBack} aria-label="Назад">
             <ArrowLeft size={20} strokeWidth={2.2} />
           </button>
+        ) : showSearch ? (
+          <label className="search-input" aria-label="Поиск по товарам">
+            <input
+              type="search"
+              value={searchValue}
+              onChange={(event) => onSearchChange?.(event.target.value)}
+              placeholder="Поиск"
+            />
+          </label>
         ) : (
           <div className="logo">TeaGram</div>
         )}

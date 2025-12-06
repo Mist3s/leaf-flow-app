@@ -109,6 +109,25 @@ button {
   color: var(--primary);
 }
 
+.search-input {
+  display: block;
+  width: 100%;
+  min-width: 180px;
+  background: var(--ghost-bg);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  padding: 8px 12px;
+}
+
+.search-input input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
 .icon-button {
   width: 36px;
   height: 36px;

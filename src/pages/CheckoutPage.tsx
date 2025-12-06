@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { createOrder } from '../api/orders';
+import { fetchProfile } from '../api/auth';
 import type { DeliveryMethod, OrderRequest, OrderSummary } from '../types';
 
 interface CheckoutPageProps {
@@ -120,6 +121,36 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToCart, onOrde
     const formatted = formatPhoneNumber(value);
     handleChange('phone', formatted);
   };
+
+  useEffect(() => {
+    const applyName = (firstName?: string, lastName?: string) => {
+      if (form.name.trim()) {
+        return;
+      }
+
+      const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
+      if (fullName) {
+        setForm((prev) => ({ ...prev, name: fullName }));
+      }
+    };
+
+    const telegramUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+    if (telegramUser) {
+      applyName(telegramUser.first_name, telegramUser.last_name);
+    }
+
+    if (form.name.trim()) {
+      return;
+    }
+
+    void fetchProfile()
+      .then((profile) => {
+        applyName(profile.firstName, profile.lastName);
+      })
+      .catch((profileError) => {
+        console.error(profileError);
+      });
+  }, [form.name]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
