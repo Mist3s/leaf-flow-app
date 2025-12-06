@@ -48,6 +48,16 @@ export const Layout: React.FC<LayoutProps> = ({
               onChange={(event) => onSearchChange?.(event.target.value)}
               placeholder="Поиск"
             />
+            {searchValue && (
+              <button
+                type="button"
+                className="icon-button search-clear"
+                onClick={() => onSearchChange?.('')}
+                aria-label="Очистить поиск"
+              >
+                <X size={18} strokeWidth={2.2} />
+              </button>
+            )}
           </label>
         ) : (
           <div className="logo">TeaGram</div>
