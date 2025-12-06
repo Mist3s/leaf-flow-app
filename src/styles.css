@@ -133,9 +133,30 @@ button {
   font-size: 14px;
 }
 
+.search-input input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 .search-clear {
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
+  padding: 4px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.search-clear:hover {
+  color: var(--primary);
+}
+
+.search-clear:active {
+  transform: scale(0.96);
 }
 
 .icon-button {
