@@ -15,6 +15,12 @@ const AppContent: React.FC = () => {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<CategoryFilterValue>('all');
   const [orderSummary, setOrderSummary] = useState<OrderSummary | null>(null);
+  const [searchValue, setSearchValue] = useState('');
+
+  const activeSearchQuery = useMemo(() => {
+    const normalized = searchValue.trim();
+    return normalized.length >= 2 ? normalized : '';
+  }, [searchValue]);
 
   const layoutTitle = useMemo(() => {
     switch (page) {
@@ -75,11 +81,15 @@ const AppContent: React.FC = () => {
       onCartClick={() => setPage('cart')}
       headerVariant={headerVariant}
       showTitle={showHeaderTitle}
+      showSearch={page === 'catalog'}
+      searchValue={searchValue}
+      onSearchChange={(value) => setSearchValue(value)}
     >
       {page === 'catalog' && (
         <CatalogPage
           activeCategory={activeCategory}
           onCategoryChange={setActiveCategory}
+          searchQuery={activeSearchQuery}
           onSelectProduct={(productId) => {
             setSelectedProductId(productId);
             setPage('product');

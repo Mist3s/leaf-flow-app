@@ -8,6 +8,7 @@ interface CatalogPageProps {
   onSelectProduct: (productId: string) => void;
   activeCategory: CategoryFilterValue;
   onCategoryChange: (category: CategoryFilterValue) => void;
+  searchQuery: string;
 }
 
 const LOAD_BATCH_SIZE = 5;
@@ -16,6 +17,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   onSelectProduct,
   activeCategory,
   onCategoryChange,
+  searchQuery,
 }) => {
   const [categories, setCategories] = useState<{ id: CategoryFilterValue; label: string }[]>([
     { id: 'all', label: 'Все' },
@@ -24,6 +26,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [total, setTotal] = useState(0);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const isLoadingRef = useRef(false);
 
@@ -42,6 +45,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
           category: activeCategory === 'all' ? undefined : activeCategory,
           offset: 0,
           limit: LOAD_BATCH_SIZE,
+          search: searchQuery || undefined,
         }),
       ]);
 
@@ -50,17 +54,19 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         ...categoriesResponse.items.map((item) => ({ id: item.id, label: item.label })),
       ]);
       setProducts(productsResponse.items);
+      setTotal(productsResponse.total);
       setHasMore(productsResponse.items.length < productsResponse.total);
     } catch (err) {
       console.error(err);
       setError('Не удалось загрузить каталог');
       setProducts([]);
+      setTotal(0);
       setHasMore(false);
     } finally {
       isLoadingRef.current = false;
       setIsLoading(false);
     }
-  }, [activeCategory]);
+  }, [activeCategory, searchQuery]);
 
   const loadProducts = useCallback(
     async (mode: 'reset' | 'append') => {
@@ -76,6 +82,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
           category: activeCategory === 'all' ? undefined : activeCategory,
           offset: mode === 'append' ? products.length : 0,
           limit: LOAD_BATCH_SIZE,
+          search: searchQuery || undefined,
         });
 
         if (mode === 'reset') {
@@ -84,22 +91,26 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
           setProducts((prev) => [...prev, ...response.items]);
         }
 
+        setTotal(response.total);
         setHasMore(response.items.length + (mode === 'append' ? products.length : 0) < response.total);
       } catch (err) {
         console.error(err);
         setError('Не удалось загрузить товары');
+        if (mode === 'reset') {
+          setTotal(0);
+        }
         setHasMore(false);
       } finally {
         isLoadingRef.current = false;
         setIsLoading(false);
       }
     },
-    [activeCategory, products.length]
+    [activeCategory, products.length, searchQuery]
   );
 
   useEffect(() => {
     void refreshPageData();
-  }, [activeCategory, refreshPageData]);
+  }, [activeCategory, refreshPageData, searchQuery]);
 
   useEffect(() => {
     if (!hasMore) {
@@ -157,7 +168,9 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
       <div className="infinite-scroll-status">
         {!isLoading && products.length === 0 && <span>Товары не найдены</span>}
         {isLoading && <span>Загрузка...</span>}
-        {!isLoading && products.length > 0 && !hasMore && <span>Вы просмотрели все товары</span>}
+        {!isLoading && products.length > 0 && !hasMore && total > LOAD_BATCH_SIZE && (
+          <span>Вы просмотрели все товары</span>
+        )}
       </div>
     </div>
   );

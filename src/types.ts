@@ -69,6 +69,12 @@ export interface AuthResponse {
   tokens: AuthTokens;
 }
 
+export interface UserProfile {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+}
+
 export type Page =
   | 'catalog'
   | 'product'
