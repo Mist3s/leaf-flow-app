@@ -28,59 +28,22 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   const [hasMore, setHasMore] = useState(true);
   const [total, setTotal] = useState(0);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const queryKeyRef = useRef('');
+  const requestIdRef = useRef(0);
   const isLoadingRef = useRef(false);
   const pendingLoadRef = useRef(false);
   const productsLengthRef = useRef(0);
   const loadProductsRef = useRef<typeof loadProducts | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
-  const refreshPageData = useCallback(async () => {
-    if (isLoadingRef.current) {
-      return;
-    }
-
-    isLoadingRef.current = true;
-    setIsLoading(true);
-    setError(null);
-    try {
-      const [categoriesResponse, productsResponse] = await Promise.all([
-        fetchCategories(),
-        fetchProducts({
-          category: activeCategory === 'all' ? undefined : activeCategory,
-          offset: 0,
-          limit: LOAD_BATCH_SIZE,
-          search: searchQuery || undefined,
-        }),
-      ]);
-
-      setCategories([
-        { id: 'all', label: 'Все' },
-        ...categoriesResponse.items.map((item) => ({ id: item.id, label: item.label })),
-      ]);
-      
-      setProducts(productsResponse.items);
-      productsLengthRef.current = productsResponse.items.length;
-      setTotal(productsResponse.total);
-      setHasMore(productsResponse.items.length >= LOAD_BATCH_SIZE);
-    } catch (err) {
-      console.error(err);
-      setError('Не удалось загрузить каталог');
-      setProducts([]);
-      productsLengthRef.current = 0;
-      setTotal(0);
-      setHasMore(false);
-    } finally {
-      isLoadingRef.current = false;
-      setIsLoading(false);
-    }
-  }, [activeCategory, searchQuery]);
-
   const loadProducts = useCallback(
     async (mode: 'reset' | 'append') => {
-      if (isLoadingRef.current) {
+      if (mode === 'append' && isLoadingRef.current) {
         return;
       }
 
+      const currentQueryKey = queryKeyRef.current;
+      const requestId = ++requestIdRef.current;
       isLoadingRef.current = true;
       setIsLoading(true);
       setError(null);
@@ -94,7 +57,11 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
           search: searchQuery || undefined,
         });
 
-        const hasMoreItems = response.items.length >= LOAD_BATCH_SIZE;
+        const hasMoreItems = currentOffset + response.items.length < response.total;
+        const isStaleRequest = currentQueryKey !== queryKeyRef.current || requestId !== requestIdRef.current;
+        if (isStaleRequest) {
+          return;
+        }
 
         if (mode === 'reset') {
           setProducts(response.items);
@@ -112,15 +79,20 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         }
       } catch (err) {
         console.error(err);
-        setError('Не удалось загрузить товары');
-        if (mode === 'reset') {
-          setTotal(0);
-          productsLengthRef.current = 0;
+        const isStaleRequest = currentQueryKey !== queryKeyRef.current || requestId !== requestIdRef.current;
+        if (!isStaleRequest) {
+          setError('Не удалось загрузить товары');
+          if (mode === 'reset') {
+            setTotal(0);
+            productsLengthRef.current = 0;
+          }
+          setHasMore(false);
         }
-        setHasMore(false);
       } finally {
-        isLoadingRef.current = false;
-        setIsLoading(false);
+        if (requestId === requestIdRef.current) {
+          isLoadingRef.current = false;
+          setIsLoading(false);
+        }
       }
     },
     [activeCategory, searchQuery]
@@ -130,8 +102,33 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   loadProductsRef.current = loadProducts;
 
   useEffect(() => {
-    void refreshPageData();
-  }, [activeCategory, refreshPageData, searchQuery]);
+    const loadCategories = async () => {
+      try {
+        const categoriesResponse = await fetchCategories();
+        setCategories([
+          { id: 'all', label: 'Все' },
+          ...categoriesResponse.items.map((item) => ({ id: item.id, label: item.label })),
+        ]);
+      } catch (err) {
+        console.error(err);
+        setError('Не удалось загрузить каталог');
+      }
+    };
+
+    void loadCategories();
+  }, []);
+
+  useEffect(() => {
+    queryKeyRef.current = `${activeCategory}:${searchQuery}`;
+    isLoadingRef.current = false;
+    pendingLoadRef.current = false;
+    productsLengthRef.current = 0;
+    setProducts([]);
+    setTotal(0);
+    setHasMore(true);
+    setError(null);
+    void loadProducts('reset');
+  }, [activeCategory, loadProducts, searchQuery]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -189,7 +186,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         observer.unobserve(sentinel);
       }
     };
-  }, [hasMore]);
+  }, [activeCategory, hasMore, searchQuery]);
 
   useEffect(() => {
     if (!isLoading && pendingLoadRef.current && hasMore && loadProductsRef.current) {
@@ -213,7 +210,9 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
             type="button"
             onClick={() => {
               setHasMore(true);
-              void refreshPageData();
+              if (loadProductsRef.current) {
+                void loadProductsRef.current('reset');
+              }
             }}
             disabled={isLoading}
           >
