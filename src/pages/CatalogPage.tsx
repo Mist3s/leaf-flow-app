@@ -33,6 +33,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   const isLoadingRef = useRef(false);
   const pendingLoadRef = useRef(false);
   const productsLengthRef = useRef(0);
+  const totalRef = useRef(0);
   const loadProductsRef = useRef<typeof loadProducts | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
@@ -58,8 +59,9 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         });
 
         const receivedCount = response.items.length;
-        const pageCount = response.total ?? receivedCount;
-        const hasMoreItems = pageCount >= LOAD_BATCH_SIZE;
+        const updatedTotal = response.total ?? totalRef.current;
+        const nextLength = mode === 'reset' ? receivedCount : productsLengthRef.current + receivedCount;
+        const hasMoreItems = response.total != null ? nextLength < updatedTotal : receivedCount === LOAD_BATCH_SIZE;
         const isStaleRequest = currentQueryKey !== queryKeyRef.current || requestId !== requestIdRef.current;
         if (isStaleRequest) {
           return;
@@ -68,7 +70,8 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         if (mode === 'reset') {
           setProducts(response.items);
           productsLengthRef.current = response.items.length;
-          setTotal(pageCount);
+          totalRef.current = updatedTotal;
+          setTotal(updatedTotal);
           setHasMore(hasMoreItems);
         } else {
           setProducts((prev) => {
@@ -76,7 +79,8 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
             productsLengthRef.current = newProducts.length;
             return newProducts;
           });
-          setTotal((prev) => prev + pageCount);
+          totalRef.current = updatedTotal;
+          setTotal(updatedTotal);
           setHasMore(hasMoreItems);
         }
       } catch (err) {
@@ -86,6 +90,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
           setError('Не удалось загрузить товары');
           if (mode === 'reset') {
             setTotal(0);
+            totalRef.current = 0;
             productsLengthRef.current = 0;
           }
           setHasMore(false);
@@ -125,6 +130,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
     isLoadingRef.current = false;
     pendingLoadRef.current = false;
     productsLengthRef.current = 0;
+    totalRef.current = 0;
     setProducts([]);
     setTotal(0);
     setHasMore(true);
