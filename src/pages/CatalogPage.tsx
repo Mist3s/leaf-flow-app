@@ -57,7 +57,13 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
           search: searchQuery || undefined,
         });
 
-        const hasMoreItems = currentOffset + response.items.length < response.total;
+        const receivedCount = response.items.length;
+        const nextLength = mode === 'append' ? currentOffset + receivedCount : receivedCount;
+        const totalItems = response.total ?? nextLength;
+        const hasMoreItems =
+          totalItems != null
+            ? nextLength < totalItems
+            : receivedCount === LOAD_BATCH_SIZE;
         const isStaleRequest = currentQueryKey !== queryKeyRef.current || requestId !== requestIdRef.current;
         if (isStaleRequest) {
           return;
@@ -66,7 +72,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         if (mode === 'reset') {
           setProducts(response.items);
           productsLengthRef.current = response.items.length;
-          setTotal(response.total);
+          setTotal(totalItems);
           setHasMore(hasMoreItems);
         } else {
           setProducts((prev) => {
@@ -74,7 +80,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
             productsLengthRef.current = newProducts.length;
             return newProducts;
           });
-          setTotal(response.total);
+          setTotal(totalItems);
           setHasMore(hasMoreItems);
         }
       } catch (err) {
