@@ -11,7 +11,7 @@ interface CatalogPageProps {
   searchQuery: string;
 }
 
-const LOAD_BATCH_SIZE = 3;
+const LOAD_BATCH_SIZE = 10;
 
 export const CatalogPage: React.FC<CatalogPageProps> = ({
   onSelectProduct,
