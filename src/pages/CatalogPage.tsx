@@ -11,7 +11,7 @@ interface CatalogPageProps {
   searchQuery: string;
 }
 
-const LOAD_BATCH_SIZE = 5;
+const LOAD_BATCH_SIZE = 3;
 
 export const CatalogPage: React.FC<CatalogPageProps> = ({
   onSelectProduct,
@@ -30,6 +30,9 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const isLoadingRef = useRef(false);
   const pendingLoadRef = useRef(false);
+  const productsLengthRef = useRef(0);
+  const loadProductsRef = useRef<typeof loadProducts | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   const refreshPageData = useCallback(async () => {
     if (isLoadingRef.current) {
@@ -54,13 +57,16 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         { id: 'all', label: 'Все' },
         ...categoriesResponse.items.map((item) => ({ id: item.id, label: item.label })),
       ]);
+      
       setProducts(productsResponse.items);
+      productsLengthRef.current = productsResponse.items.length;
       setTotal(productsResponse.total);
-      setHasMore(productsResponse.items.length < productsResponse.total);
+      setHasMore(productsResponse.items.length >= LOAD_BATCH_SIZE);
     } catch (err) {
       console.error(err);
       setError('Не удалось загрузить каталог');
       setProducts([]);
+      productsLengthRef.current = 0;
       setTotal(0);
       setHasMore(false);
     } finally {
@@ -78,27 +84,38 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
       isLoadingRef.current = true;
       setIsLoading(true);
       setError(null);
+
       try {
+        const currentOffset = mode === 'append' ? productsLengthRef.current : 0;
         const response = await fetchProducts({
           category: activeCategory === 'all' ? undefined : activeCategory,
-          offset: mode === 'append' ? products.length : 0,
+          offset: currentOffset,
           limit: LOAD_BATCH_SIZE,
           search: searchQuery || undefined,
         });
 
+        const hasMoreItems = response.items.length >= LOAD_BATCH_SIZE;
+
         if (mode === 'reset') {
           setProducts(response.items);
+          productsLengthRef.current = response.items.length;
+          setTotal(response.total);
+          setHasMore(hasMoreItems);
         } else {
-          setProducts((prev) => [...prev, ...response.items]);
+          setProducts((prev) => {
+            const newProducts = [...prev, ...response.items];
+            productsLengthRef.current = newProducts.length;
+            return newProducts;
+          });
+          setTotal(response.total);
+          setHasMore(hasMoreItems);
         }
-
-        setTotal(response.total);
-        setHasMore(response.items.length + (mode === 'append' ? products.length : 0) < response.total);
       } catch (err) {
         console.error(err);
         setError('Не удалось загрузить товары');
         if (mode === 'reset') {
           setTotal(0);
+          productsLengthRef.current = 0;
         }
         setHasMore(false);
       } finally {
@@ -106,54 +123,80 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         setIsLoading(false);
       }
     },
-    [activeCategory, products.length, searchQuery]
+    [activeCategory, searchQuery]
   );
+
+  // Сохраняем актуальную версию функции в ref
+  loadProductsRef.current = loadProducts;
 
   useEffect(() => {
     void refreshPageData();
   }, [activeCategory, refreshPageData, searchQuery]);
 
   useEffect(() => {
-    if (!hasMore) {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) {
       return;
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
+    if (!observerRef.current) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) {
+              return;
+            }
+
             if (isLoadingRef.current) {
               pendingLoadRef.current = true;
               return;
             }
 
-            pendingLoadRef.current = false;
-            void loadProducts('append');
-          }
-        });
-      },
-      { rootMargin: '200px' }
-    );
+            const scrollY = window.scrollY || window.pageYOffset;
+            const isFirstPage = productsLengthRef.current <= LOAD_BATCH_SIZE;
+            const hasUserScrolled = scrollY > 100;
 
-    const sentinel = sentinelRef.current;
-    if (sentinel) {
+            if (isFirstPage && !hasUserScrolled) {
+              return;
+            }
+
+            if (loadProductsRef.current) {
+              pendingLoadRef.current = false;
+              void loadProductsRef.current('append');
+            }
+          });
+        },
+        {
+          rootMargin: '0px',
+          threshold: 0.1,
+        }
+      );
+
+      observerRef.current = observer;
+    }
+
+    const observer = observerRef.current;
+
+    if (hasMore) {
+      observer.unobserve(sentinel);
       observer.observe(sentinel);
+    } else {
+      observer.unobserve(sentinel);
     }
 
     return () => {
-      if (sentinel) {
+      if (observer && sentinel) {
         observer.unobserve(sentinel);
       }
-      observer.disconnect();
     };
-  }, [hasMore, loadProducts]);
+  }, [hasMore]);
 
   useEffect(() => {
-    if (!isLoading && pendingLoadRef.current && hasMore) {
+    if (!isLoading && pendingLoadRef.current && hasMore && loadProductsRef.current) {
       pendingLoadRef.current = false;
-      void loadProducts('append');
+      void loadProductsRef.current('append');
     }
-  }, [hasMore, isLoading, loadProducts]);
+  }, [hasMore, isLoading]);
 
   return (
     <div className="page catalog-page">
@@ -182,9 +225,6 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
       <div className="infinite-scroll-status">
         {!isLoading && products.length === 0 && <span>Товары не найдены</span>}
         {isLoading && <span>Загрузка...</span>}
-        {!isLoading && products.length > 0 && !hasMore && total > LOAD_BATCH_SIZE && (
-          <span>Вы просмотрели все товары</span>
-        )}
       </div>
     </div>
   );
