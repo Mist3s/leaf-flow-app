@@ -38,7 +38,7 @@ export const Layout: React.FC<LayoutProps> = ({
       <div className="header-left">
         {showBackButton ? (
           <button className="icon-button" onClick={onBack} aria-label="Назад">
-            <ArrowLeft size={20} strokeWidth={2.2} />
+            <ArrowLeft size={24} strokeWidth={2.4} />
           </button>
         ) : showSearch ? (
           <label className="search-input" aria-label="Поиск по товарам">
@@ -55,7 +55,7 @@ export const Layout: React.FC<LayoutProps> = ({
                 onClick={() => onSearchChange?.('')}
                 aria-label="Очистить поиск"
               >
-                <X size={16} strokeWidth={2.2} />
+                <X size={20} strokeWidth={2.2} />
               </button>
             )}
           </label>
@@ -66,10 +66,10 @@ export const Layout: React.FC<LayoutProps> = ({
       <div className="header-title">{showTitle ? title : null}</div>
       <div className="header-actions">
         <button className="icon-button" onClick={toggleTheme} aria-label="Переключить тему">
-          {theme === 'light' ? <Sun size={20} strokeWidth={2.2} /> : <Moon size={20} strokeWidth={2.2} />}
+          {theme === 'light' ? <Sun size={24} strokeWidth={2.4} /> : <Moon size={24} strokeWidth={2.4} />}
         </button>
         <button className="icon-button cart-button" onClick={onCartClick} aria-label="Корзина">
-          <ShoppingCart size={20} strokeWidth={2.2} />
+          <ShoppingCart size={24} strokeWidth={2.4} />
           {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
         </button>
       </div>
@@ -91,7 +91,7 @@ export const Layout: React.FC<LayoutProps> = ({
     return (
       <header className="app-header app-header--minimal">
         <button className="icon-button" onClick={handleClose} aria-label="Закрыть" type="button">
-          <X size={20} strokeWidth={2.2} />
+          <X size={24} strokeWidth={2.4} />
         </button>
         <div className="header-title header-title--center">{title}</div>
         <div className="header-spacer" />

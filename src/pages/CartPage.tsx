@@ -90,7 +90,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onContinueShopping, onChecko
                       aria-label={`Удалить ${product.name} из корзины`}
                       onClick={() => updateItem(item.productId, item.variantId, 0)}
                     >
-                      <X size={18} strokeWidth={2.2} />
+                      <X size={22} strokeWidth={2.4} />
                     </button>
                   </div>
                   <div className="cart-item-subtitle">{variantLabel}</div>
