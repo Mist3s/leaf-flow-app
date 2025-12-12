@@ -63,6 +63,10 @@ export const ProductPage: React.FC<ProductPageProps> = ({ productId, onGoToCart 
     ? getItemQuantity(product.id, selectedVariant.id)
     : 0;
 
+  const selectedVariantTotal = selectedVariant
+    ? selectedVariant.price * selectedQuantity
+    : 0;
+
   const productTotal = product
     ? product.variants.reduce((sum, variant) => {
         const quantity = getItemQuantity(product.id, variant.id);
@@ -123,10 +127,10 @@ export const ProductPage: React.FC<ProductPageProps> = ({ productId, onGoToCart 
 
         {selectedVariant && (
           <div className="variant-control-card">
-            <div className="variant-control-info">
-              <div className="variant-control-weight">{selectedVariant.weight}</div>
-              <div className="variant-control-price">
-                {selectedVariant.price.toLocaleString('ru-RU')} ₽
+            <div className="variant-control-summary">
+              <div className="variant-control-label">Сумма по упаковке</div>
+              <div className="variant-control-value">
+                {selectedVariantTotal.toLocaleString('ru-RU')} ₽
               </div>
             </div>
             {selectedQuantity > 0 ? (

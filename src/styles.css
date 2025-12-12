@@ -392,19 +392,20 @@ button {
   border: 1px solid var(--border-color);
 }
 
-.variant-control-info {
+.variant-control-summary {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.variant-control-weight {
-  font-weight: 600;
-}
-
-.variant-control-price {
+.variant-control-label {
   color: var(--muted-color);
   font-size: 14px;
+}
+
+.variant-control-value {
+  font-size: 20px;
+  font-weight: 700;
 }
 
 .primary-button {
