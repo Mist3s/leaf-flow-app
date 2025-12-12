@@ -63,14 +63,17 @@ export const CartPage: React.FC<CartPageProps> = ({ onContinueShopping, onChecko
           return (
             <div key={`${item.productId}-${item.variantId}`} className="cart-item">
               <div className="cart-item-main">
-                <button
-                  className="cart-item-preview"
-                  type="button"
-                  onClick={() => onSelectProduct(item.productId)}
-                  aria-label={`Открыть ${product.name}`}
-                >
-                  <img src={product.image} alt={product.name} className="cart-item-image" />
-                </button>
+                <div className="cart-item-media">
+                  <button
+                    className="cart-item-preview"
+                    type="button"
+                    onClick={() => onSelectProduct(item.productId)}
+                    aria-label={`Открыть ${product.name}`}
+                  >
+                    <img src={product.image} alt={product.name} className="cart-item-image" />
+                  </button>
+                  <div className="cart-item-total">{lineTotal.toLocaleString('ru-RU')} ₽</div>
+                </div>
                 <div className="cart-item-info">
                   <div className="cart-item-header">
                     <button
@@ -92,7 +95,6 @@ export const CartPage: React.FC<CartPageProps> = ({ onContinueShopping, onChecko
                   </div>
                   <div className="cart-item-subtitle">{variantLabel}</div>
                   <div className="cart-item-footer">
-                    <div className="cart-item-total">{lineTotal.toLocaleString('ru-RU')} ₽</div>
                     <div className="cart-item-quantity">
                       <QuantityControl
                         value={item.quantity}
