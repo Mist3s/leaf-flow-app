@@ -1,6 +1,7 @@
 import React from 'react';
 import { useCart } from '../context/CartContext';
 import { QuantityControl } from '../components/QuantityControl';
+import { X } from 'lucide-react';
 
 interface CartPageProps {
   onContinueShopping: () => void;
@@ -57,7 +58,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onContinueShopping, onChecko
             return null;
           }
           const lineTotal = variant.price * item.quantity;
-          const variantLabel = `${variant.weight} x ${variant.price.toLocaleString('ru-RU')} ₽`;
+          const variantLabel = `${variant.weight} - ${variant.price.toLocaleString('ru-RU')} ₽`;
 
           return (
             <div key={`${item.productId}-${item.variantId}`} className="cart-item">
@@ -74,12 +75,22 @@ export const CartPage: React.FC<CartPageProps> = ({ onContinueShopping, onChecko
                 </div>
               </button>
               <div className="cart-item-actions">
-                <QuantityControl
-                  value={item.quantity}
-                  onDecrease={() => updateItem(item.productId, item.variantId, item.quantity - 1)}
-                  onIncrease={() => updateItem(item.productId, item.variantId, item.quantity + 1)}
-                />
+                <button
+                  type="button"
+                  className="icon-button cart-item-remove"
+                  aria-label={`Удалить ${product.name} из корзины`}
+                  onClick={() => updateItem(item.productId, item.variantId, 0)}
+                >
+                  <X size={18} strokeWidth={2.2} />
+                </button>
                 <div className="cart-item-total">{lineTotal.toLocaleString('ru-RU')} ₽</div>
+                <div className="cart-item-quantity">
+                  <QuantityControl
+                    value={item.quantity}
+                    onDecrease={() => updateItem(item.productId, item.variantId, item.quantity - 1)}
+                    onIncrease={() => updateItem(item.productId, item.variantId, item.quantity + 1)}
+                  />
+                </div>
               </div>
             </div>
           );
