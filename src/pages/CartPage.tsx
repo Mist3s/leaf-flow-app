@@ -62,34 +62,45 @@ export const CartPage: React.FC<CartPageProps> = ({ onContinueShopping, onChecko
 
           return (
             <div key={`${item.productId}-${item.variantId}`} className="cart-item">
-              <button
-                className="cart-item-main"
-                type="button"
-                onClick={() => onSelectProduct(item.productId)}
-                aria-label={`Открыть ${product.name}`}
-              >
-                <img src={product.image} alt={product.name} className="cart-item-image" />
-                <div className="cart-item-info">
-                  <div className="cart-item-title">{product.name}</div>
-                  <div className="cart-item-subtitle">{variantLabel}</div>
-                </div>
-              </button>
-              <div className="cart-item-actions">
+              <div className="cart-item-main">
                 <button
+                  className="cart-item-preview"
                   type="button"
-                  className="icon-button cart-item-remove"
-                  aria-label={`Удалить ${product.name} из корзины`}
-                  onClick={() => updateItem(item.productId, item.variantId, 0)}
+                  onClick={() => onSelectProduct(item.productId)}
+                  aria-label={`Открыть ${product.name}`}
                 >
-                  <X size={18} strokeWidth={2.2} />
+                  <img src={product.image} alt={product.name} className="cart-item-image" />
                 </button>
-                <div className="cart-item-total">{lineTotal.toLocaleString('ru-RU')} ₽</div>
-                <div className="cart-item-quantity">
-                  <QuantityControl
-                    value={item.quantity}
-                    onDecrease={() => updateItem(item.productId, item.variantId, item.quantity - 1)}
-                    onIncrease={() => updateItem(item.productId, item.variantId, item.quantity + 1)}
-                  />
+                <div className="cart-item-info">
+                  <div className="cart-item-header">
+                    <button
+                      className="cart-item-title"
+                      type="button"
+                      onClick={() => onSelectProduct(item.productId)}
+                      aria-label={`Открыть ${product.name}`}
+                    >
+                      {product.name}
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-button cart-item-remove"
+                      aria-label={`Удалить ${product.name} из корзины`}
+                      onClick={() => updateItem(item.productId, item.variantId, 0)}
+                    >
+                      <X size={18} strokeWidth={2.2} />
+                    </button>
+                  </div>
+                  <div className="cart-item-subtitle">{variantLabel}</div>
+                  <div className="cart-item-footer">
+                    <div className="cart-item-total">{lineTotal.toLocaleString('ru-RU')} ₽</div>
+                    <div className="cart-item-quantity">
+                      <QuantityControl
+                        value={item.quantity}
+                        onDecrease={() => updateItem(item.productId, item.variantId, item.quantity - 1)}
+                        onIncrease={() => updateItem(item.productId, item.variantId, item.quantity + 1)}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
