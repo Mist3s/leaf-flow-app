@@ -178,7 +178,6 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToCart, onOrde
     () => [
       { value: 'pickup', label: 'Самовывоз' },
       { value: 'courier', label: 'Курьер' },
-      { value: 'cdek', label: 'СДЭК' },
     ],
     []
   );
@@ -303,7 +302,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToCart, onOrde
 
         <section>
           <h2 className="section-title">Оплата</h2>
-          <div className="payment-info">Оплата при получении</div>
+          <div className="payment-info">Обсудить оплату с оператор в чате.</div>
         </section>
 
         <section className="checkout-summary">

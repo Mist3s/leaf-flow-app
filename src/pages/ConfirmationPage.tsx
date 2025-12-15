@@ -36,6 +36,7 @@ export const ConfirmationPage: React.FC<ConfirmationPageProps> = ({ summary, onG
             <span>Сумма</span>
             <span>{summary.total.toLocaleString('ru-RU')} ₽</span>
           </div>
+          <p className="confirmation-text">Дальнейшая переписка по заказу ведётся с оператором в чат-боте.</p>
         </div>
         <div className="confirmation-actions">
           <button className="cta-button" onClick={onGoToCatalog}>
