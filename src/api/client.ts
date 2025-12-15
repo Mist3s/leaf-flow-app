@@ -97,13 +97,16 @@ const authorizeWithTelegram = async (waitForData: boolean = true): Promise<AuthT
   
   // Если данных нет и нужно ждать, ожидаем их появления
   if (!initData && waitForData) {
+    console.log('[Auth] initData not available immediately, waiting...');
     initData = await waitForInitData();
   }
   
   if (!initData) {
-    console.warn('Cannot authorize via Telegram: initData is missing');
+    console.warn('[Auth] Cannot authorize via Telegram: initData is missing');
     return null;
   }
+
+  console.log('[Auth] initData available, making authorization request...');
 
   inFlightTelegramAuth = fetch(`${API_BASE_URL}/auth/telegram/init`, {
     method: 'POST',
@@ -150,9 +153,11 @@ const authorizeWithTelegram = async (waitForData: boolean = true): Promise<AuthT
 const ensureAuthTokens = async (waitForInitData: boolean = true): Promise<AuthTokens | null> => {
   const tokens = readAuthTokens();
   if (tokens?.accessToken) {
+    console.log('[Auth] Using existing tokens from storage');
     return tokens;
   }
 
+  console.log(`[Auth] No tokens found, attempting Telegram auth (waitForData: ${waitForInitData})...`);
   return authorizeWithTelegram(waitForInitData);
 };
 
@@ -255,8 +260,11 @@ export const request = async <T>(path: string, options: RequestOptions = {}): Pr
       }
 
       if (response.status === 401 && !options.skipAuth) {
+        console.log(`[Auth] Received 401 for ${path}, authRetryCount: ${authRetryCount}`);
+        
         // Предотвращаем бесконечную рекурсию
         if (authRetryCount >= MAX_AUTH_RETRIES) {
+          console.error('[Auth] Max auth retries reached, throwing error');
           let errorBody: unknown;
           try {
             errorBody = await response.json();
@@ -271,21 +279,28 @@ export const request = async <T>(path: string, options: RequestOptions = {}): Pr
         }
 
         // Пытаемся обновить токены через refresh
+        console.log('[Auth] Attempting to refresh tokens...');
         const refreshed = await refreshTokens();
         if (refreshed?.accessToken) {
+          console.log('[Auth] Tokens refreshed successfully, retrying request');
           // Токены уже сохранены в localStorage функцией refreshTokens
           return request<T>(path, { ...options, _authRetryCount: authRetryCount + 1 });
         }
 
         // Если рефреш не удался, пытаемся авторизоваться через Telegram
-        // При повторной попытке не ждем initData, так как он должен быть уже доступен
-        const telegramTokens = await authorizeWithTelegram(false);
+        // При первой попытке (authRetryCount === 0) ждем initData, так как он может появиться позже
+        // При повторных попытках не ждем, чтобы не блокировать запросы
+        const shouldWaitForInitData = authRetryCount === 0;
+        console.log(`[Auth] Refresh failed, attempting Telegram auth (waitForData: ${shouldWaitForInitData})...`);
+        const telegramTokens = await authorizeWithTelegram(shouldWaitForInitData);
         if (telegramTokens?.accessToken) {
+          console.log('[Auth] Telegram authorization successful, retrying request');
           // Токены уже сохранены в localStorage функцией authorizeWithTelegram
           return request<T>(path, { ...options, _authRetryCount: authRetryCount + 1 });
         }
 
         // Если обе попытки не удались, выбрасываем ошибку авторизации
+        console.error('[Auth] Both refresh and Telegram auth failed');
         let errorBody: unknown;
         try {
           errorBody = await response.json();
