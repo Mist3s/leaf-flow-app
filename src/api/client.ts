@@ -1,6 +1,6 @@
 import type { AuthResponse, AuthTokens } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://app-stage.zavarka39.ru/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://app.zavarka39.ru/api/v1';
 const AUTH_STORAGE_KEY = 'teagram-auth';
 const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? import.meta.env.VITE_APP_NAME ?? 'unknown';
 
