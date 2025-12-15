@@ -41,26 +41,65 @@ let inFlightTelegramAuth: Promise<AuthTokens | null> | null = null;
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const getTelegramInitData = () => {
+/**
+ * Ожидает появления initData от Telegram WebApp
+ * Это необходимо, когда приложение открывается через меню, а не через кнопку
+ */
+const waitForInitData = async (maxWaitMs: number = 5000, checkIntervalMs: number = 100): Promise<string | null> => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  // Проверяем сразу
+  const immediateData = window.Telegram?.WebApp?.initData;
+  if (immediateData && immediateData.trim()) {
+    return immediateData;
+  }
+
+  // Если данных нет, ждем их появления
+  const startTime = Date.now();
+  while (Date.now() - startTime < maxWaitMs) {
+    await delay(checkIntervalMs);
+    const initData = window.Telegram?.WebApp?.initData;
+    if (initData && initData.trim()) {
+      console.log('initData became available after waiting');
+      return initData;
+    }
+  }
+
+  console.warn('initData did not become available within timeout');
+  return null;
+};
+
+const getTelegramInitData = (wait: boolean = false): string | null => {
   if (typeof window === 'undefined') {
     return null;
   }
 
   const initData = window.Telegram?.WebApp?.initData;
   if (!initData || !initData.trim()) {
-    console.warn('Telegram initData is missing');
+    if (!wait) {
+      console.warn('Telegram initData is missing');
+    }
     return null;
   }
 
   return initData;
 };
 
-const authorizeWithTelegram = async (): Promise<AuthTokens | null> => {
+const authorizeWithTelegram = async (waitForData: boolean = true): Promise<AuthTokens | null> => {
   if (inFlightTelegramAuth) {
     return inFlightTelegramAuth;
   }
 
-  const initData = getTelegramInitData();
+  // Сначала проверяем без ожидания
+  let initData = getTelegramInitData(false);
+  
+  // Если данных нет и нужно ждать, ожидаем их появления
+  if (!initData && waitForData) {
+    initData = await waitForInitData();
+  }
+  
   if (!initData) {
     console.warn('Cannot authorize via Telegram: initData is missing');
     return null;
@@ -108,13 +147,13 @@ const authorizeWithTelegram = async (): Promise<AuthTokens | null> => {
   return inFlightTelegramAuth;
 };
 
-const ensureAuthTokens = async (): Promise<AuthTokens | null> => {
+const ensureAuthTokens = async (waitForInitData: boolean = true): Promise<AuthTokens | null> => {
   const tokens = readAuthTokens();
   if (tokens?.accessToken) {
     return tokens;
   }
 
-  return authorizeWithTelegram();
+  return authorizeWithTelegram(waitForInitData);
 };
 
 const refreshTokens = async (): Promise<AuthTokens | null> => {
@@ -181,7 +220,9 @@ export const request = async <T>(path: string, options: RequestOptions = {}): Pr
   const authRetryCount = options._authRetryCount ?? 0;
   const MAX_AUTH_RETRIES = 2; // Максимум 2 попытки авторизации (рефреш + Telegram)
 
-  let tokens = options.skipAuth ? null : await ensureAuthTokens();
+  // При первой попытке ждем initData, при повторных попытках - нет (чтобы не ждать долго)
+  const shouldWaitForInitData = authRetryCount === 0;
+  let tokens = options.skipAuth ? null : await ensureAuthTokens(shouldWaitForInitData);
   const headers = new Headers({ Accept: 'application/json' });
 
   if (options.headers) {
@@ -237,7 +278,8 @@ export const request = async <T>(path: string, options: RequestOptions = {}): Pr
         }
 
         // Если рефреш не удался, пытаемся авторизоваться через Telegram
-        const telegramTokens = await authorizeWithTelegram();
+        // При повторной попытке не ждем initData, так как он должен быть уже доступен
+        const telegramTokens = await authorizeWithTelegram(false);
         if (telegramTokens?.accessToken) {
           // Токены уже сохранены в localStorage функцией authorizeWithTelegram
           return request<T>(path, { ...options, _authRetryCount: authRetryCount + 1 });
