@@ -6,11 +6,20 @@ interface ConfirmationPageProps {
   onGoToCatalog: () => void;
 }
 
+const deliveryMethodMapping: Record<string, string> = {
+  courier: 'Курьер',
+  pickup: 'Самовывоз',
+};
+
 export const ConfirmationPage: React.FC<ConfirmationPageProps> = ({ summary, onGoToCatalog }) => {
   const handleClose = () => {
     if (typeof window !== 'undefined' && window.Telegram?.WebApp?.close) {
       window.Telegram.WebApp.close();
     }
+  };
+
+  const getDeliveryMethodLabel = (method: string): string => {
+    return deliveryMethodMapping[method] || method;
   };
 
   return (
@@ -30,7 +39,7 @@ export const ConfirmationPage: React.FC<ConfirmationPageProps> = ({ summary, onG
           </div>
           <div className="summary-row">
             <span>Доставка</span>
-            <span>{summary.deliveryMethod}</span>
+            <span>{getDeliveryMethodLabel(summary.deliveryMethod)}</span>
           </div>
           <div className="summary-row">
             <span>Сумма</span>

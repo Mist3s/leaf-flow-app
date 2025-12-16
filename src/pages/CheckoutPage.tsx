@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { createOrder } from '../api/orders';
 import { fetchProfile } from '../api/auth';
@@ -69,6 +69,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToCart, onOrde
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const profileFetchedRef = useRef(false);
+  const nameManuallyEditedRef = useRef(false);
 
   const isAddressRequired = form.delivery !== 'pickup';
 
@@ -107,6 +109,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToCart, onOrde
     setForm((prev) => ({ ...prev, [key]: value }));
     clearFieldError(key);
 
+    if (key === 'name') {
+      nameManuallyEditedRef.current = true;
+    }
+
     if (key === 'delivery' && value === 'pickup') {
       clearFieldError('address');
     }
@@ -123,13 +129,15 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToCart, onOrde
   };
 
   useEffect(() => {
-    if (form.name.trim()) {
+    if (profileFetchedRef.current || nameManuallyEditedRef.current || form.name.trim()) {
       return;
     }
 
+    profileFetchedRef.current = true;
+
     const applyName = (firstName?: string, lastName?: string) => {
       const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
-      if (fullName) {
+      if (fullName && !nameManuallyEditedRef.current) {
         setForm((prev) => ({ ...prev, name: fullName }));
       }
     };
@@ -267,8 +275,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToCart, onOrde
           {form.delivery === 'pickup' ? (
             <div className="pickup-info">
               <div className="pickup-title">Пункт самовывоза</div>
-              <div>г. Москва, Китай-город, ул. Чайная, 7</div>
-              <div className="pickup-note">Ежедневно с 10:00 до 22:00, дегустационный зал на втором этаже</div>
+              <div>г. Калининград, ул. Эльблонгская, 2</div>
+              <div className="pickup-note">Ежедневно с 10:00 до 20:00, по предварительной договоренности</div>
             </div>
           ) : (
             <label className="form-label">
