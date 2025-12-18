@@ -297,8 +297,11 @@ button {
 .product-image {
   width: 80px;
   height: 80px;
+  display: block;
   object-fit: cover;
   border-radius: 12px;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 .product-title {
@@ -538,8 +541,11 @@ button {
 .cart-item-image {
   width: 72px;
   height: 72px;
+  display: block;
   object-fit: cover;
   border-radius: 12px;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 .cart-item-info {
