@@ -33,6 +33,10 @@ const fallbackCopy = (text: string) => {
 
 export const ProductShareActions: React.FC<ProductShareActionsProps> = ({ productId }) => {
   const shareLink = useMemo(() => buildProductDeepLink(productId), [productId]);
+  const telegramShareUrl = useMemo(
+    () => `https://t.me/share/url?url=${encodeURIComponent(shareLink)}`,
+    [shareLink],
+  );
 
   const handleCopy = useCallback(async () => {
     try {
@@ -56,7 +60,7 @@ export const ProductShareActions: React.FC<ProductShareActionsProps> = ({ produc
 
   const handleShare = useCallback(async () => {
     if (window.Telegram?.WebApp?.openTelegramLink) {
-      window.Telegram.WebApp.openTelegramLink(shareLink);
+      window.Telegram.WebApp.openTelegramLink(telegramShareUrl);
       return;
     }
 
@@ -70,7 +74,7 @@ export const ProductShareActions: React.FC<ProductShareActionsProps> = ({ produc
     }
 
     window.open(shareLink, '_blank');
-  }, [shareLink]);
+  }, [shareLink, telegramShareUrl]);
 
   return (
     <>
