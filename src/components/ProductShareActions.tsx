@@ -59,11 +59,6 @@ export const ProductShareActions: React.FC<ProductShareActionsProps> = ({ produc
   }, [shareLink]);
 
   const handleShare = useCallback(async () => {
-    if (window.Telegram?.WebApp?.openTelegramLink) {
-      window.Telegram.WebApp.openTelegramLink(telegramShareUrl);
-      return;
-    }
-
     if (navigator.share) {
       try {
         await navigator.share({ url: shareLink });
@@ -71,6 +66,11 @@ export const ProductShareActions: React.FC<ProductShareActionsProps> = ({ produc
       } catch (error) {
         console.error('System share failed', error);
       }
+    }
+
+    if (window.Telegram?.WebApp?.openTelegramLink) {
+      window.Telegram.WebApp.openTelegramLink(telegramShareUrl);
+      return;
     }
 
     window.open(shareLink, '_blank');
