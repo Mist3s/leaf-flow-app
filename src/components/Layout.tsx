@@ -15,6 +15,7 @@ interface LayoutProps {
   showSearch?: boolean;
   searchValue?: string;
   onSearchChange?: (value: string) => void;
+  headerActions?: React.ReactNode;
 }
 
 export const Layout: React.FC<LayoutProps> = ({
@@ -30,6 +31,7 @@ export const Layout: React.FC<LayoutProps> = ({
   showSearch = false,
   searchValue = '',
   onSearchChange,
+  headerActions,
 }) => {
   const { theme, toggleTheme } = useTheme();
 
@@ -65,6 +67,7 @@ export const Layout: React.FC<LayoutProps> = ({
       </div>
       <div className="header-title">{showTitle ? title : null}</div>
       <div className="header-actions">
+        {headerActions}
         <button className="icon-button" onClick={toggleTheme} aria-label="Переключить тему">
           {theme === 'light' ? <Sun size={24} strokeWidth={2.4} /> : <Moon size={24} strokeWidth={2.4} />}
         </button>

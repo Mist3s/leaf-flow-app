@@ -218,6 +218,30 @@ button {
   padding-bottom: 16px;
 }
 
+.telegram-fallback {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 24px;
+  max-width: 420px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: center;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.06);
+}
+
+.telegram-fallback h1 {
+  font-size: 20px;
+  margin: 0;
+}
+
+.telegram-fallback p {
+  margin: 0;
+  color: var(--muted-color);
+}
+
 .page {
   display: flex;
   flex-direction: column;

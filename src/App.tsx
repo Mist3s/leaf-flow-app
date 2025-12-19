@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
 import { CartProvider, useCart } from './context/CartContext';
 import { Layout } from './components/Layout';
@@ -8,14 +8,38 @@ import { CartPage } from './pages/CartPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { ConfirmationPage } from './pages/ConfirmationPage';
 import type { CategoryFilterValue, OrderSummary, Page } from './types';
+import { ProductShareActions } from './components/ProductShareActions';
+import {
+  buildMainDeepLink,
+  buildProductDeepLink,
+  extractStartParam,
+  hasTelegramInitData,
+  parseProductIdFromStartParam,
+} from './utils/telegram';
+
+const getStartContext = () => {
+  if (typeof window === 'undefined') {
+    return { startParam: null, productId: null };
+  }
+
+  const startParam = extractStartParam();
+  return {
+    startParam,
+    productId: parseProductIdFromStartParam(startParam),
+  };
+};
 
 const AppContent: React.FC = () => {
   const { totalCount } = useCart();
-  const [page, setPage] = useState<Page>('catalog');
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const startContext = getStartContext();
+  const [page, setPage] = useState<Page>(startContext.productId ? 'product' : 'catalog');
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(startContext.productId);
   const [activeCategory, setActiveCategory] = useState<CategoryFilterValue>('all');
   const [orderSummary, setOrderSummary] = useState<OrderSummary | null>(null);
   const [searchValue, setSearchValue] = useState('');
+  const [startParam, setStartParam] = useState<string | null>(startContext.startParam);
+  const startParamRef = useRef<string | null>(startContext.startParam);
+  const [isTelegramEnvironment, setIsTelegramEnvironment] = useState<boolean>(() => hasTelegramInitData());
 
   const activeSearchQuery = useMemo(() => {
     const normalized = searchValue.trim();
@@ -38,6 +62,51 @@ const AppContent: React.FC = () => {
         return 'TeaGram';
     }
   }, [page]);
+
+  useEffect(() => {
+    let checksLeft = 15;
+    let intervalId: number | undefined;
+
+    const checkEnvironment = () => {
+      const hasInitData = hasTelegramInitData();
+      if (hasInitData) {
+        setIsTelegramEnvironment(true);
+      }
+
+      const paramFromEnvironment = extractStartParam();
+      if (paramFromEnvironment && paramFromEnvironment !== startParamRef.current) {
+        startParamRef.current = paramFromEnvironment;
+        setStartParam(paramFromEnvironment);
+      }
+
+      checksLeft -= 1;
+
+      if (checksLeft <= 0 && intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+
+    checkEnvironment();
+    intervalId = window.setInterval(checkEnvironment, 400);
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const productIdFromStart = parseProductIdFromStartParam(startParam);
+    if (productIdFromStart) {
+      setSelectedProductId(productIdFromStart);
+      setPage('product');
+    }
+  }, [startParam]);
+
+  useEffect(() => {
+    startParamRef.current = startParam;
+  }, [startParam]);
 
   const handleBack = () => {
     switch (page) {
@@ -71,6 +140,24 @@ const AppContent: React.FC = () => {
   const showBackButton = headerVariant === 'default' && page !== 'catalog';
   const showHeaderTitle = headerVariant === 'minimal';
 
+  if (!isTelegramEnvironment) {
+    const deepLink = selectedProductId
+      ? buildProductDeepLink(selectedProductId)
+      : buildMainDeepLink();
+
+    return (
+      <Layout title="TeaGram" cartCount={0} headerVariant="none">
+        <div className="telegram-fallback">
+          <h1>Это приложение работает только через Telegram.</h1>
+          <p>Откройте Mini App через Telegram, чтобы продолжить покупки.</p>
+          <button className="cta-button" onClick={() => window.open(deepLink, '_blank')}>
+            Открыть в Telegram
+          </button>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout
       title={layoutTitle}
@@ -84,6 +171,11 @@ const AppContent: React.FC = () => {
       showSearch={page === 'catalog'}
       searchValue={searchValue}
       onSearchChange={(value) => setSearchValue(value)}
+      headerActions={
+        page === 'product' && selectedProductId ? (
+          <ProductShareActions productId={selectedProductId} />
+        ) : undefined
+      }
     >
       {page === 'catalog' && (
         <CatalogPage
