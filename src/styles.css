@@ -173,21 +173,6 @@ button {
   transform: scale(0.96);
 }
 
-.search-hide {
-  border: none;
-  background: var(--ghost-bg);
-  color: var(--text-secondary);
-  border-radius: 12px;
-  padding: 10px 12px;
-  height: 40px;
-  font-size: 14px;
-  flex-shrink: 0;
-}
-
-.search-hide:active {
-  transform: scale(0.98);
-}
-
 .icon-button {
   width: 42px;
   height: 42px;

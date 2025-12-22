@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import { Sun, Moon, ShoppingCart, ArrowLeft, X } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
@@ -35,7 +35,6 @@ export const Layout: React.FC<LayoutProps> = ({
 }) => {
   const { theme, toggleTheme } = useTheme();
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   const blurSearchInput = () => {
     searchInputRef.current?.blur();
@@ -56,14 +55,14 @@ export const Layout: React.FC<LayoutProps> = ({
                 type="search"
                 value={searchValue}
                 onChange={(event) => onSearchChange?.(event.target.value)}
-                onFocus={() => setIsSearchFocused(true)}
-                onBlur={() => setIsSearchFocused(false)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') {
                     event.preventDefault();
                     blurSearchInput();
                   }
                 }}
+                inputMode="search"
+                enterKeyHint="search"
                 placeholder="Поиск"
               />
               {searchValue && (
@@ -80,16 +79,6 @@ export const Layout: React.FC<LayoutProps> = ({
                 </button>
               )}
             </label>
-            {isSearchFocused && (
-              <button
-                type="button"
-                className="search-hide"
-                onClick={blurSearchInput}
-                aria-label="Скрыть клавиатуру"
-              >
-                Скрыть
-              </button>
-            )}
           </div>
         ) : (
           <div className="logo">TeaGram</div>
