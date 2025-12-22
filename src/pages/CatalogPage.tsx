@@ -27,6 +27,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [total, setTotal] = useState(0);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const queryKeyRef = useRef('');
   const requestIdRef = useRef(0);
@@ -123,6 +124,19 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
     };
 
     void loadCategories();
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 360);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   useEffect(() => {
@@ -233,6 +247,16 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         {!isLoading && products.length === 0 && <span>Товары не найдены</span>}
         {isLoading && <span>Загрузка...</span>}
       </div>
+      {showScrollTop && (
+        <button
+          type="button"
+          className="scroll-to-top"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label="Вернуться наверх"
+        >
+          Вверх
+        </button>
+      )}
     </div>
   );
 };
