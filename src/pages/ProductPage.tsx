@@ -95,7 +95,10 @@ export const ProductPage: React.FC<ProductPageProps> = ({ productId, onGoToCart 
     <div className="page product-page">
       <img src={product.image} alt={product.name} className="product-hero" />
       <h1 className="page-title">{product.name}</h1>
-      <p className="product-description">{product.description}</p>
+      <div
+        className="product-description"
+        dangerouslySetInnerHTML={{ __html: product.description.replace(/\n/g, '<br />') }}
+      />
       {product.tags.length > 0 && (
         <div className="tag-list">
           {product.tags.map((tag) => (
