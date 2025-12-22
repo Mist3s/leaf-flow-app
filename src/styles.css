@@ -356,6 +356,20 @@ button {
   line-height: 1.5;
 }
 
+.product-description p {
+  margin: 0 0 8px;
+}
+
+.product-description p:last-child {
+  margin-bottom: 0;
+}
+
+.product-description ul,
+.product-description ol {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
 .tag-list {
   display: flex;
   gap: 8px;
