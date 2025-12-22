@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { Sun, Moon, ShoppingCart, ArrowLeft, X } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
@@ -34,6 +34,12 @@ export const Layout: React.FC<LayoutProps> = ({
   headerActions,
 }) => {
   const { theme, toggleTheme } = useTheme();
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  const blurSearchInput = () => {
+    searchInputRef.current?.blur();
+  };
 
   const renderDefaultHeader = () => (
     <header className="app-header">
@@ -43,24 +49,48 @@ export const Layout: React.FC<LayoutProps> = ({
             <ArrowLeft size={24} strokeWidth={2.4} />
           </button>
         ) : showSearch ? (
-          <label className="search-input" aria-label="Поиск по товарам">
-            <input
-              type="search"
-              value={searchValue}
-              onChange={(event) => onSearchChange?.(event.target.value)}
-              placeholder="Поиск"
-            />
-            {searchValue && (
+          <div className="search-wrapper">
+            <label className="search-input" aria-label="Поиск по товарам">
+              <input
+                ref={searchInputRef}
+                type="search"
+                value={searchValue}
+                onChange={(event) => onSearchChange?.(event.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setIsSearchFocused(false)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    blurSearchInput();
+                  }
+                }}
+                placeholder="Поиск"
+              />
+              {searchValue && (
+                <button
+                  type="button"
+                  className="search-clear"
+                  onClick={() => {
+                    onSearchChange?.('');
+                    blurSearchInput();
+                  }}
+                  aria-label="Очистить поиск"
+                >
+                  <X size={20} strokeWidth={2.2} />
+                </button>
+              )}
+            </label>
+            {isSearchFocused && (
               <button
                 type="button"
-                className="search-clear"
-                onClick={() => onSearchChange?.('')}
-                aria-label="Очистить поиск"
+                className="search-hide"
+                onClick={blurSearchInput}
+                aria-label="Скрыть клавиатуру"
               >
-                <X size={20} strokeWidth={2.2} />
+                Скрыть
               </button>
             )}
-          </label>
+          </div>
         ) : (
           <div className="logo">TeaGram</div>
         )}

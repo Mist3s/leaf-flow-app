@@ -112,6 +112,13 @@ button {
   color: var(--primary);
 }
 
+.search-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
 .search-input {
   position: relative;
   display: flex;
@@ -164,6 +171,21 @@ button {
 
 .search-clear:active {
   transform: scale(0.96);
+}
+
+.search-hide {
+  border: none;
+  background: var(--ghost-bg);
+  color: var(--text-secondary);
+  border-radius: 12px;
+  padding: 10px 12px;
+  height: 40px;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.search-hide:active {
+  transform: scale(0.98);
 }
 
 .icon-button {
