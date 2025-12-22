@@ -40,6 +40,7 @@ const AppContent: React.FC = () => {
   const [startParam, setStartParam] = useState<string | null>(startContext.startParam);
   const startParamRef = useRef<string | null>(startContext.startParam);
   const [isTelegramEnvironment, setIsTelegramEnvironment] = useState<boolean>(() => hasTelegramInitData());
+  const catalogScrollPositionRef = useRef(0);
 
   const activeSearchQuery = useMemo(() => {
     const normalized = searchValue.trim();
@@ -108,27 +109,48 @@ const AppContent: React.FC = () => {
     startParamRef.current = startParam;
   }, [startParam]);
 
+  useEffect(() => {
+    if (page === 'product') {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+      return;
+    }
+
+    if (page === 'catalog') {
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: catalogScrollPositionRef.current, behavior: 'auto' });
+      });
+    }
+  }, [page]);
+
+  const navigateToPage = (nextPage: Page) => {
+    if (page === 'catalog' && nextPage !== 'catalog') {
+      catalogScrollPositionRef.current = window.scrollY;
+    }
+
+    setPage(nextPage);
+  };
+
   const handleBack = () => {
     switch (page) {
       case 'product':
         setSelectedProductId(null);
-        setPage('catalog');
+        navigateToPage('catalog');
         break;
       case 'cart':
         if (selectedProductId) {
-          setPage('product');
+          navigateToPage('product');
         } else {
           setSelectedProductId(null);
-          setPage('catalog');
+          navigateToPage('catalog');
         }
         break;
       case 'checkout':
-        setPage('cart');
+        navigateToPage('cart');
         break;
       case 'confirmation':
         setSelectedProductId(null);
         setOrderSummary(null);
-        setPage('catalog');
+        navigateToPage('catalog');
         break;
       default:
         break;
@@ -165,7 +187,7 @@ const AppContent: React.FC = () => {
       showBackButton={showBackButton}
       onBack={handleBack}
       onClose={headerVariant === 'minimal' ? handleBack : undefined}
-      onCartClick={() => setPage('cart')}
+      onCartClick={() => navigateToPage('cart')}
       headerVariant={headerVariant}
       showTitle={showHeaderTitle}
       showSearch={page === 'catalog'}
@@ -177,23 +199,24 @@ const AppContent: React.FC = () => {
         ) : undefined
       }
     >
-      {page === 'catalog' && (
+      <div style={{ display: page === 'catalog' ? 'block' : 'none' }}>
         <CatalogPage
           activeCategory={activeCategory}
           onCategoryChange={setActiveCategory}
           searchQuery={activeSearchQuery}
           onSelectProduct={(productId) => {
+            catalogScrollPositionRef.current = window.scrollY;
             setSelectedProductId(productId);
-            setPage('product');
+            navigateToPage('product');
           }}
         />
-      )}
+      </div>
 
       {page === 'product' && selectedProductId && (
         <ProductPage
           productId={selectedProductId}
           onGoToCart={() => {
-            setPage('cart');
+            navigateToPage('cart');
           }}
         />
       )}
@@ -202,22 +225,22 @@ const AppContent: React.FC = () => {
         <CartPage
           onContinueShopping={() => {
             setSelectedProductId(null);
-            setPage('catalog');
+            navigateToPage('catalog');
           }}
-          onCheckout={() => setPage('checkout')}
+          onCheckout={() => navigateToPage('checkout')}
           onSelectProduct={(productId) => {
             setSelectedProductId(productId);
-            setPage('product');
+            navigateToPage('product');
           }}
         />
       )}
 
       {page === 'checkout' && (
         <CheckoutPage
-          onBackToCart={() => setPage('cart')}
+          onBackToCart={() => navigateToPage('cart')}
           onOrderComplete={(summary) => {
             setOrderSummary(summary);
-            setPage('confirmation');
+            navigateToPage('confirmation');
           }}
         />
       )}
@@ -226,7 +249,7 @@ const AppContent: React.FC = () => {
         <ConfirmationPage
           summary={orderSummary}
           onGoToCatalog={() => {
-            setPage('catalog');
+            navigateToPage('catalog');
             setOrderSummary(null);
             setSelectedProductId(null);
           }}

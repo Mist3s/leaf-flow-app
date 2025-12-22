@@ -297,6 +297,32 @@ button {
   color: var(--muted-color);
 }
 
+.scroll-to-top {
+  position: fixed;
+  right: 16px;
+  bottom: 20px;
+  width: 52px;
+  height: 52px;
+  border-radius: 26px;
+  border: none;
+  background: var(--primary);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s ease;
+  z-index: 20;
+}
+
+.scroll-to-top:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+}
+
+.scroll-to-top:active {
+  transform: translateY(0);
+}
+
 .product-card {
   display: flex;
   align-items: center;
