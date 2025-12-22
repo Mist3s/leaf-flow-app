@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { ArrowUp } from 'lucide-react';
 import { CategoryFilter } from '../components/CategoryFilter';
 import { ProductCard } from '../components/ProductCard';
 import { fetchCategories, fetchProducts } from '../api/catalog';
@@ -254,7 +255,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           aria-label="Вернуться наверх"
         >
-          Вверх
+          <ArrowUp size={24} strokeWidth={2.4} />
         </button>
       )}
     </div>
