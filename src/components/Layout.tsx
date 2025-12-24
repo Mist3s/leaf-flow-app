@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Sun, Moon, ShoppingCart, ArrowLeft, X } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
@@ -34,6 +34,13 @@ export const Layout: React.FC<LayoutProps> = ({
   headerActions,
 }) => {
   const { theme, toggleTheme } = useTheme();
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.currentTarget.blur();
+    }
+  };
 
   const renderDefaultHeader = () => (
     <header className="app-header">
@@ -48,7 +55,9 @@ export const Layout: React.FC<LayoutProps> = ({
               type="search"
               value={searchValue}
               onChange={(event) => onSearchChange?.(event.target.value)}
+              onKeyDown={handleSearchKeyDown}
               placeholder="Поиск"
+              ref={searchInputRef}
             />
             {searchValue && (
               <button
