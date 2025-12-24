@@ -41,6 +41,7 @@ const AppContent: React.FC = () => {
   const startParamRef = useRef<string | null>(startContext.startParam);
   const [isTelegramEnvironment, setIsTelegramEnvironment] = useState<boolean>(() => hasTelegramInitData());
   const catalogScrollPositionRef = useRef(0);
+  const [previousPage, setPreviousPage] = useState<Page | null>(null);
 
   const activeSearchQuery = useMemo(() => {
     const normalized = searchValue.trim();
@@ -127,6 +128,7 @@ const AppContent: React.FC = () => {
       catalogScrollPositionRef.current = window.scrollY;
     }
 
+    setPreviousPage(page);
     setPage(nextPage);
   };
 
@@ -134,7 +136,7 @@ const AppContent: React.FC = () => {
     switch (page) {
       case 'product':
         setSelectedProductId(null);
-        navigateToPage('catalog');
+        navigateToPage(previousPage === 'cart' ? 'cart' : 'catalog');
         break;
       case 'cart':
         if (selectedProductId) {
