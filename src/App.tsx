@@ -34,6 +34,9 @@ const AppContent: React.FC = () => {
   const startContext = getStartContext();
   const [page, setPage] = useState<Page>(startContext.productId ? 'product' : 'catalog');
   const [selectedProductId, setSelectedProductId] = useState<string | null>(startContext.productId);
+  const [productEntryPoint, setProductEntryPoint] = useState<'catalog' | 'cart' | null>(
+    startContext.productId ? 'catalog' : null,
+  );
   const [activeCategory, setActiveCategory] = useState<CategoryFilterValue>('all');
   const [orderSummary, setOrderSummary] = useState<OrderSummary | null>(null);
   const [searchValue, setSearchValue] = useState('');
@@ -102,6 +105,7 @@ const AppContent: React.FC = () => {
     const productIdFromStart = parseProductIdFromStartParam(startParam);
     if (productIdFromStart) {
       setSelectedProductId(productIdFromStart);
+      setProductEntryPoint('catalog');
       setPage('product');
     }
   }, [startParam]);
@@ -136,13 +140,20 @@ const AppContent: React.FC = () => {
     switch (page) {
       case 'product':
         setSelectedProductId(null);
-        navigateToPage(previousPage === 'cart' ? 'cart' : 'catalog');
+        if (productEntryPoint === 'cart') {
+          setProductEntryPoint(null);
+          navigateToPage('cart');
+        } else {
+          setProductEntryPoint(null);
+          navigateToPage('catalog');
+        }
         break;
       case 'cart':
         if (selectedProductId) {
           navigateToPage('product');
         } else {
           setSelectedProductId(null);
+          setProductEntryPoint(null);
           navigateToPage('catalog');
         }
         break;
@@ -151,6 +162,7 @@ const AppContent: React.FC = () => {
         break;
       case 'confirmation':
         setSelectedProductId(null);
+        setProductEntryPoint(null);
         setOrderSummary(null);
         navigateToPage('catalog');
         break;
@@ -209,6 +221,7 @@ const AppContent: React.FC = () => {
           onSelectProduct={(productId) => {
             catalogScrollPositionRef.current = window.scrollY;
             setSelectedProductId(productId);
+            setProductEntryPoint('catalog');
             navigateToPage('product');
           }}
         />
@@ -227,11 +240,13 @@ const AppContent: React.FC = () => {
         <CartPage
           onContinueShopping={() => {
             setSelectedProductId(null);
+            setProductEntryPoint(null);
             navigateToPage('catalog');
           }}
           onCheckout={() => navigateToPage('checkout')}
           onSelectProduct={(productId) => {
             setSelectedProductId(productId);
+            setProductEntryPoint('cart');
             navigateToPage('product');
           }}
         />
@@ -254,6 +269,7 @@ const AppContent: React.FC = () => {
             navigateToPage('catalog');
             setOrderSummary(null);
             setSelectedProductId(null);
+            setProductEntryPoint(null);
           }}
         />
       )}
