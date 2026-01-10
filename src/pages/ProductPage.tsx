@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import Markdown from 'react-markdown';
 import { useCart } from '../context/CartContext';
 import { QuantityControl } from '../components/QuantityControl';
 import { fetchProductById } from '../api/catalog';
@@ -95,10 +96,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({ productId, onGoToCart 
     <div className="page product-page">
       <img src={product.image} alt={product.name} className="product-hero" />
       <h1 className="page-title">{product.name}</h1>
-      <div
-        className="product-description"
-        dangerouslySetInnerHTML={{ __html: product.description.replace(/\n/g, '<br />') }}
-      />
       {product.tags.length > 0 && (
         <div className="tag-list">
           {product.tags.map((tag) => (
@@ -156,6 +153,13 @@ export const ProductPage: React.FC<ProductPageProps> = ({ productId, onGoToCart 
             )}
           </div>
         )}
+      </section>
+
+      <section className="description-section">
+        <h2 className="section-title">Описание</h2>
+        <div className="product-description">
+          <Markdown>{product.description}</Markdown>
+        </div>
       </section>
 
       <div className="bottom-bar">
