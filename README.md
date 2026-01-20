@@ -1,4 +1,4 @@
-# TeaGram Shop
+# Leaf Flow App
 
 Telegram Mini App интернет-магазина китайского чая. Современный интерфейс в стиле Telegram с поддержкой светлой и тёмной темы.
 
