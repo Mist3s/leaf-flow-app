@@ -1,6 +1,7 @@
 import React from 'react';
 import { useCart } from '../context/CartContext';
 import { QuantityControl } from '../components/QuantityControl';
+import { getProductImageUrl } from '../utils/image';
 import { X } from 'lucide-react';
 
 interface CartPageProps {
@@ -70,7 +71,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onContinueShopping, onChecko
                     onClick={() => onSelectProduct(item.productId)}
                     aria-label={`Открыть ${product.name}`}
                   >
-                    <img src={product.image} alt={product.name} className="cart-item-image" />
+                    <img src={getProductImageUrl(product, 'thumb')} alt={product.name} className="cart-item-image" />
                   </button>
                   <div className="cart-item-total">{lineTotal.toLocaleString('ru-RU')} ₽</div>
                 </div>

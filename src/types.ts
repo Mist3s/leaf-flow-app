@@ -12,6 +12,29 @@ export interface ProductVariant {
   price: number;
 }
 
+export type ImageVariantType = 'original' | 'thumb' | 'md' | 'lg';
+
+export interface ProductImageVariant {
+  id: number;
+  product_image_id: number;
+  variant: ImageVariantType;
+  format: string;
+  storage_key: string;
+  width: number;
+  height: number;
+  byte_size: number;
+}
+
+export interface ProductImage {
+  id: number;
+  product_id: string;
+  title: string;
+  is_active: boolean;
+  sort_order: number;
+  variants: ProductImageVariant[];
+  image_url: string | null;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -19,6 +42,7 @@ export interface Product {
   category: ProductCategory;
   tags: string[];
   image: string;
+  images?: ProductImage[];
   variants: ProductVariant[];
 }
 

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Markdown from 'react-markdown';
 import { useCart } from '../context/CartContext';
 import { QuantityControl } from '../components/QuantityControl';
+import { ProductGallery } from '../components/ProductGallery';
 import { fetchProductById } from '../api/catalog';
 import type { Product } from '../types';
 
@@ -94,7 +95,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({ productId, onGoToCart 
 
   return (
     <div className="page product-page">
-      <img src={product.image} alt={product.name} className="product-hero" />
+      <ProductGallery product={product} />
       <h1 className="page-title">{product.name}</h1>
       {product.tags.length > 0 && (
         <div className="tag-list">
